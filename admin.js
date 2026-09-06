@@ -123,7 +123,6 @@ function renderOrders() {
     });
 }
 
-// Filtros de Admin
 const btnFilterAll = document.getElementById('btnFilterAll');
 const btnFilterPending = document.getElementById('btnFilterPending');
 
@@ -143,12 +142,11 @@ if (btnFilterAll && btnFilterPending) {
     });
 }
 
-// Simulador de Escáner QR / Entrega
 const btnSimulateScan = document.getElementById('btnSimulateScan');
 if (btnSimulateScan) {
     btnSimulateScan.addEventListener('click', () => {
         const resultDiv = document.getElementById('scanResult');
-        const orderToDeliver = allOrders.find(o => o.status === 2); // Busca órdenes listas
+        const orderToDeliver = allOrders.find(o => o.status === 2);
         
         if (orderToDeliver) {
             resultDiv.innerHTML = `
