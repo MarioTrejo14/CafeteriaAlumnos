@@ -65,6 +65,21 @@ document.addEventListener("DOMContentLoaded", () => {
     setupNavigation();
     updateCartUI();
 
+    if (db) {
+        // Escuchar inventario en tiempo real desde Firebase
+        onSnapshot(collection(db, "menu"), (snapshot) => {
+            let remoteProducts = [];
+            snapshot.forEach(docSnap => {
+                remoteProducts.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            if (remoteProducts.length > 0) {
+                database.products = remoteProducts;
+                renderCategories();
+                renderProducts();
+            }
+        });
+    }
+
     if (activeOrderDocId && db) {
         switchView('view-tracking');
         listenToMyOrder(activeOrderDocId);
@@ -110,12 +125,13 @@ function renderProducts(filterText = '') {
     if (!container) return;
     container.innerHTML = '';
     
+    // Solo mostrar productos que estén disponibles en el inventario
     let filtered = database.products.filter(p => p.available);
     if (currentCategory !== "Todos") filtered = filtered.filter(p => p.category === currentCategory);
     if (filterText) filtered = filtered.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
 
     if (filtered.length === 0) {
-        container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">No se encontraron platillos disponibles.</p>';
+        container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">No hay platillos disponibles en esta categoría.</p>';
         return;
     }
 
@@ -136,29 +152,31 @@ function renderProducts(filterText = '') {
     });
 
     document.querySelectorAll('.btn-add').forEach(btn => {
-        btn.addEventListener('click', (e) => addToCart(parseInt(e.target.dataset.id)));
+        btn.addEventListener('click', (e) => addToCart(e.target.dataset.id));
     });
 }
 
 window.changeQty = function(id, delta) {
-    const item = cart.find(i => i.id === id);
+    const item = cart.find(i => String(i.id) === String(id));
     if (item) {
         item.qty += delta;
-        if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+        if (item.qty <= 0) cart = cart.filter(i => String(i.id) !== String(id));
         saveAndSyncCart();
     }
 }
 
 window.removeItem = function(id) {
-    const item = cart.find(i => i.id === id);
-    cart = cart.filter(i => i.id !== id);
+    const item = cart.find(i => String(i.id) === String(id));
+    cart = cart.filter(i => String(i.id) !== String(id));
     saveAndSyncCart();
     if (item) showToast(`Se eliminó ${item.name} del carrito.`);
 }
 
 function addToCart(productId) {
-    const product = database.products.find(p => p.id === productId);
-    const existing = cart.find(item => item.id === productId);
+    const product = database.products.find(p => String(p.id) === String(productId));
+    if (!product) return;
+    
+    const existing = cart.find(item => String(item.id) === String(productId));
     if (existing) existing.qty++;
     else cart.push({ ...product, qty: 1 });
     
@@ -208,11 +226,11 @@ function updateCartUI() {
                         <div class="cart-item-price">$${item.price.toFixed(2)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">c/u</span></div>
                         <div class="cart-item-actions">
                             <div class="qty-selector">
-                                <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                                <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
                                 <span class="qty-value">${item.qty}</span>
-                                <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+                                <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
                             </div>
-                            <button class="btn-delete-item" onclick="removeItem(${item.id})">
+                            <button class="btn-delete-item" onclick="removeItem('${item.id}')">
                                 <i class="far fa-trash-alt"></i> Eliminar
                             </button>
                         </div>
