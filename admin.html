@@ -3,53 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAFETERÍA UdeC - Panel Administrativo</title>
-    <link rel="stylesheet" href="style.css?v=2026">
+    <title>SICEUC - Panel de Cafetería</title>
+    <!-- Enlace directo con control de versión -->
+    <link rel="stylesheet" href="style.css?v=2026.2">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+
+    <!-- Header Institucional SICEUC / UdeC -->
     <header class="app-header">
         <div class="header-content">
-            <h1>🛠️ PANEL DE CAFETERÍA</h1>
-            <h2>Administración y Pedidos</h2>
-            <span class="academic-badge">Control Institucional</span>
+            <h1>SICEUC - PANEL DE CONTROL</h1>
+            <h2>Administración de Cafetería Danni's</h2>
+            <span class="academic-badge">Módulo Institucional</span>
         </div>
     </header>
 
+    <!-- Contenedor Principal -->
     <main id="app-container">
         <!-- VISTA 1: GESTIÓN DE PEDIDOS -->
         <div id="view-admin-orders" class="view active">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-                <h2>Pedidos en Tiempo Real</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; background: white; padding: 1rem 1.25rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                <div>
+                    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Órdenes en Tiempo Real</h2>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Gestión de flujo de pedidos para personal autorizado</p>
+                </div>
+                <!-- Filtros Institucionales -->
                 <div style="display: flex; gap: 0.5rem;">
-                    <button id="btnFilterAll" class="cat-btn active" style="padding: 0.4rem 1rem; border-radius: 8px;">Todos</button>
-                    <button id="btnFilterPending" class="cat-btn" style="padding: 0.4rem 1rem; border-radius: 8px;">Pendientes</button>
+                    <button id="btnFilterAll" class="cat-btn active" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem;">Todos</button>
+                    <button id="btnFilterPending" class="cat-btn" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem;">Pendientes</button>
                 </div>
             </div>
 
+            <!-- Contenedor en Cuadrícula para las Órdenes -->
             <div id="adminOrdersContainer" class="products-grid"></div>
         </div>
 
         <!-- VISTA 2: SIMULADOR DE ESCÁNER / ENTREGA -->
         <div id="view-scanner" class="view">
             <div class="success-screen" style="max-width: 600px; margin: 0 auto; text-align: center;">
-                <h2>Simulador de Escáner QR</h2>
-                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Simula la lectura del código del alumno para entregar pedidos listos.</p>
-                <button id="btnSimulateScan" class="btn-primary" style="max-width: 250px; margin: 0 auto 1.5rem auto;">Escanear Siguiente Orden</button>
+                <i class="fas fa-qrcode" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <h2>Módulo de Entrega por QR</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Simula la lectura del código del alumno para liberar los pedidos listos.</p>
+                
+                <button id="btnSimulateScan" class="btn-primary" style="max-width: 280px; margin: 0 auto 1.5rem auto;">Escanear Siguiente Orden</button>
+                
                 <div id="scanResult" class="hidden" style="background: var(--bg-color); padding: 1.5rem; border-radius: 10px; border: 1px solid var(--border); text-align: left;"></div>
             </div>
         </div>
     </main>
 
+    <!-- Barra de Navegación del Admin -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-admin-orders">
             <i class="fas fa-clipboard-list"></i><span>Pedidos</span>
         </button>
         <button class="nav-btn" data-target="view-scanner">
-            <i class="fas fa-qrcode"></i><span>Escáner</span>
+            <i class="fas fa-qrcode"></i><span>Escáner QR</span>
         </button>
     </nav>
 
-    <script type="module" src="admin.js?v=2026"></script>
+    <!-- Script de lógica de administración -->
+    <script type="module" src="admin.js?v=2026.2"></script>
 </body>
 </html>
