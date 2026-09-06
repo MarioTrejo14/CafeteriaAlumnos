@@ -18,7 +18,6 @@ try {
     console.warn("Firebase warning:", e);
 }
 
-// Menú oficial completo de Danni's
 const database = {
     categories: ["Todos", "Desayunos y Comidas", "Tacos", "Tortas y Más", "Menú Verde", "Bebidas", "Paquetes"],
     products: [
@@ -59,16 +58,9 @@ let cart = [];
 let currentCategory = "Todos";
 let activeOrderDocId = localStorage.getItem('myActiveOrderId') || null;
 
-const productsContainer = document.getElementById('productsContainer');
-const categoriesContainer = document.getElementById('categoriesContainer');
-const searchInput = document.getElementById('searchInput');
-const cartBadge = document.getElementById('cartBadge');
-const cartItemsContainer = document.getElementById('cartItems');
-const cartTotalEl = document.getElementById('cartTotal');
-const studentIdInput = document.getElementById('studentId');
-const btnConfirmOrder = document.getElementById('btnConfirmOrder');
-const views = document.querySelectorAll('.view');
-const navButtons = document.querySelectorAll('.nav-btn');
+document.addEventListener("DOMContentLoaded", () => {
+    init();
+});
 
 function init() {
     renderCategories();
@@ -82,6 +74,7 @@ function init() {
 }
 
 function renderCategories() {
+    const categoriesContainer = document.getElementById('categoriesContainer');
     if (!categoriesContainer) return;
     categoriesContainer.innerHTML = '';
     database.categories.forEach(cat => {
@@ -94,6 +87,7 @@ function renderCategories() {
 }
 
 function renderProducts(filterText = '') {
+    const productsContainer = document.getElementById('productsContainer');
     if (!productsContainer) return;
     productsContainer.innerHTML = '';
     let filtered = database.products.filter(p => p.available);
@@ -139,7 +133,14 @@ function addToCart(productId) {
 }
 
 function updateCartUI() {
+    const cartItemsContainer = document.getElementById('cartItems');
+    const cartTotalEl = document.getElementById('cartTotal');
+    const cartBadge = document.getElementById('cartBadge');
+    const studentIdInput = document.getElementById('studentId');
+    const btnConfirmOrder = document.getElementById('btnConfirmOrder');
+
     if (!cartItemsContainer || !cartTotalEl || !cartBadge) return;
+    
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     cartBadge.textContent = totalItems;
     cartBadge.classList.toggle('hidden', totalItems === 0);
@@ -170,15 +171,20 @@ function updateCartUI() {
     }
 }
 
+const searchInput = document.getElementById('searchInput');
 if (searchInput) searchInput.addEventListener('input', e => renderProducts(e.target.value));
+
+const studentIdInput = document.getElementById('studentId');
 if (studentIdInput) studentIdInput.addEventListener('input', updateCartUI);
+
 const btnEmptyCart = document.getElementById('btnEmptyCart');
 if (btnEmptyCart) btnEmptyCart.addEventListener('click', () => { cart = []; updateCartUI(); });
 
+const btnConfirmOrder = document.getElementById('btnConfirmOrder');
 if (btnConfirmOrder) {
     btnConfirmOrder.addEventListener('click', async () => {
         if (!db) {
-            alert("Modo simulación: Firebase no está conectado, pero tu pedido local está listo.");
+            alert("Modo simulación: Firebase no está conectado.");
             return;
         }
 
@@ -246,6 +252,9 @@ function listenToMyOrder(docId) {
 }
 
 function switchView(viewId) {
+    const views = document.querySelectorAll('.view');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    
     views.forEach(v => v.classList.remove('active'));
     const targetView = document.getElementById(viewId);
     if (targetView) targetView.classList.add('active');
@@ -257,7 +266,6 @@ function switchView(viewId) {
 }
 
 function setupNavigation() {
+    const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.target)));
 }
-
-init();
