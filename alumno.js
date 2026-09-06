@@ -1,3 +1,23 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCLhub133VwdXlQEq4PZ4A6vOYrttSOtR0",
+    authDomain: "cafeteria-udc.firebaseapp.com",
+    projectId: "cafeteria-udc",
+    storageBucket: "cafeteria-udc.firebasestorage.app",
+    messagingSenderId: "721300284933",
+    appId: "1:721300284933:web:2ab2826531918e0edcde6c"
+};
+
+let db = null;
+try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+} catch (e) {
+    console.warn("Firebase warning:", e);
+}
+
 const database = {
     categories: ["Todos", "Desayunos y Comidas", "Tacos", "Tortas y Más", "Menú Verde", "Bebidas", "Paquetes"],
     products: [
@@ -34,9 +54,9 @@ const database = {
     ]
 };
 
-// Estado con persistencia en LocalStorage
 let cart = JSON.parse(localStorage.getItem('udc_cart')) || [];
 let currentCategory = "Todos";
+let activeOrderDocId = localStorage.getItem('myActiveOrderId') || null;
 
 document.addEventListener("DOMContentLoaded", () => {
     initToastContainer();
@@ -44,6 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderProducts();
     setupNavigation();
     updateCartUI();
+
+    if (activeOrderDocId && db) {
+        switchView('view-tracking');
+        listenToMyOrder(activeOrderDocId);
+    }
 });
 
 function initToastContainer() {
@@ -124,6 +149,13 @@ window.changeQty = function(id, delta) {
     }
 }
 
+window.removeItem = function(id) {
+    const item = cart.find(i => i.id === id);
+    cart = cart.filter(i => i.id !== id);
+    saveAndSyncCart();
+    if (item) showToast(`Se eliminó ${item.name} del carrito.`);
+}
+
 function addToCart(productId) {
     const product = database.products.find(p => p.id === productId);
     const existing = cart.find(item => item.id === productId);
@@ -142,6 +174,8 @@ function saveAndSyncCart() {
 function updateCartUI() {
     const cartItemsContainer = document.getElementById('cartItems');
     const cartTotalEl = document.getElementById('cartTotal');
+    const summarySubtotal = document.getElementById('summarySubtotal');
+    const summaryItemCount = document.getElementById('summaryItemCount');
     const cartBadge = document.getElementById('cartBadge');
     const studentIdInput = document.getElementById('studentId');
     const btnConfirmOrder = document.getElementById('btnConfirmOrder');
@@ -151,28 +185,45 @@ function updateCartUI() {
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     cartBadge.textContent = totalItems;
     cartBadge.classList.toggle('hidden', totalItems === 0);
+    if (summaryItemCount) summaryItemCount.textContent = totalItems;
 
     cartItemsContainer.innerHTML = '';
     let total = 0;
     
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2.5rem;">Tu carrito está vacío. ¡Explora el menú!</p>';
+        cartItemsContainer.innerHTML = `
+            <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 4rem 2rem; text-align: center;">
+                <i class="fas fa-shopping-cart" style="font-size: 3rem; color: var(--border); margin-bottom: 1rem;"></i>
+                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Tu carrito está vacío</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">¿No sabes qué ordenar? Explora nuestro menú institucional.</p>
+            </div>`;
     } else {
         cart.forEach(item => {
             total += item.price * item.qty;
             cartItemsContainer.innerHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
-                    <div><strong style="font-size: 0.95rem;">${item.name}</strong><br><small style="color: var(--text-muted);">$${item.price.toFixed(2)} c/u</small></div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <button onclick="changeQty(${item.id}, -1)" style="width: 32px; height: 32px; padding: 0; background: #f8fafc; color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-weight: bold;">-</button>
-                        <span style="font-weight: 700; font-size: 0.95rem; min-width: 15px; text-align: center;">${item.qty}</span>
-                        <button onclick="changeQty(${item.id}, 1)" style="width: 32px; height: 32px; padding: 0; background: #f8fafc; color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-weight: bold;">+</button>
+                <div class="cart-item-card">
+                    <img src="${item.image}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/150'">
+                    <div class="cart-item-details">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-price">$${item.price.toFixed(2)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">c/u</span></div>
+                        <div class="cart-item-actions">
+                            <div class="qty-selector">
+                                <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                                <span class="qty-value">${item.qty}</span>
+                                <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+                            </div>
+                            <button class="btn-delete-item" onclick="removeItem(${item.id})">
+                                <i class="far fa-trash-alt"></i> Eliminar
+                            </button>
+                        </div>
                     </div>
                 </div>`;
         });
     }
 
+    if (summarySubtotal) summarySubtotal.textContent = `$${total.toFixed(2)}`;
     cartTotalEl.textContent = `$${total.toFixed(2)}`;
+    
     if (btnConfirmOrder) {
         btnConfirmOrder.disabled = !(cart.length > 0 && studentIdInput && studentIdInput.value.trim().length >= 4);
     }
@@ -193,21 +244,65 @@ if (btnEmptyCart) btnEmptyCart.addEventListener('click', () => {
 
 const btnConfirmOrder = document.getElementById('btnConfirmOrder');
 if (btnConfirmOrder) {
-    btnConfirmOrder.addEventListener('click', () => {
-        const orderNumber = `A-${Math.floor(1000 + Math.random() * 9000)}`;
-        document.getElementById('trackOrderNumber').textContent = `ORDEN #${orderNumber}`;
-        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        document.getElementById('trackOrderTotal').textContent = `$${total.toFixed(2)}`;
-        
-        const ul = document.getElementById('trackOrderItems');
-        ul.innerHTML = cart.map(i => `<li style="display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px dashed var(--border);"><span>${i.qty} × ${i.name}</span> <strong>$${(i.price * i.qty).toFixed(2)}</strong></li>`).join('');
+    btnConfirmOrder.addEventListener('click', async () => {
+        btnConfirmOrder.disabled = true;
+        btnConfirmOrder.textContent = "Procesando...";
 
-        cart = [];
-        localStorage.removeItem('udc_cart');
-        studentIdInput.value = '';
-        updateCartUI();
-        switchView('view-tracking');
-        showToast("¡Pedido confirmado con éxito!");
+        const studentId = studentIdInput.value.trim();
+        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const orderNumber = `A-${Math.floor(1000 + Math.random() * 9000)}`;
+        const maskedId = studentId.length > 4 ? '••••' + studentId.slice(-4) : studentId;
+
+        try {
+            let docRefId = "local-" + Date.now();
+            if (db) {
+                const docRef = await addDoc(collection(db, "pedidos"), {
+                    orderNumber, studentId, maskedId, items: cart, total, status: 0, timestamp: serverTimestamp()
+                });
+                docRefId = docRef.id;
+            }
+
+            localStorage.setItem('myActiveOrderId', docRefId);
+            cart = [];
+            localStorage.removeItem('udc_cart');
+            studentIdInput.value = '';
+            updateCartUI();
+            btnConfirmOrder.textContent = "Continuar con el pedido";
+            
+            switchView('view-tracking');
+            if (db) listenToMyOrder(docRefId);
+            showToast("¡Pedido confirmado con éxito!");
+        } catch (e) {
+            console.error("Error:", e);
+            alert("Hubo un error al enviar el pedido.");
+            btnConfirmOrder.disabled = false;
+            btnConfirmOrder.textContent = "Continuar con el pedido";
+        }
+    });
+}
+
+function listenToMyOrder(docId) {
+    if (!db) return;
+    onSnapshot(doc(db, "pedidos", docId), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('trackOrderNumber').textContent = `ORDEN #${data.orderNumber}`;
+            document.getElementById('trackOrderTotal').textContent = `$${data.total.toFixed(2)}`;
+            
+            const ul = document.getElementById('trackOrderItems');
+            ul.innerHTML = data.items.map(i => `<li style="display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px dashed var(--border);"><span>${i.qty} × ${i.name}</span> <strong>$${(i.price * i.qty).toFixed(2)}</strong></li>`).join('');
+
+            for(let i = 0; i <= 3; i++){
+                const step = document.getElementById(`step-${i}`);
+                if (step) {
+                    step.style.color = "var(--text-muted)";
+                    if (i <= data.status) {
+                        step.style.color = "var(--primary)";
+                        step.style.fontWeight = "700";
+                    }
+                }
+            }
+        }
     });
 }
 
