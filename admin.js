@@ -1,141 +1,116 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCLhub133VwdXlQEq4PZ4A6vOYrttSOtR0",
-    authDomain: "cafeteria-udc.firebaseapp.com",
-    projectId: "cafeteria-udc",
-    storageBucket: "cafeteria-udc.firebasestorage.app",
-    messagingSenderId: "721300284933",
-    appId: "1:721300284933:web:2ab2826531918e0edcde6c"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-let allOrders = [];
-let currentFilter = 'todos';
-
-const container = document.getElementById('adminOrdersContainer');
-const views = document.querySelectorAll('.view');
-const navButtons = document.querySelectorAll('.nav-btn');
-
-const q = query(collection(db, "pedidos"), orderBy("timestamp", "desc"));
-onSnapshot(q, (snapshot) => {
-    allOrders = [];
-    snapshot.forEach((doc) => {
-        allOrders.push({ id: doc.id, ...doc.data() });
-    });
-    renderOrders();
-});
-
-function renderOrders() {
-    container.innerHTML = '';
-    
-    let displayOrders = allOrders;
-    if (currentFilter === 'pendientes') {
-        displayOrders = allOrders.filter(o => o.status < 3);
-    }
-
-    if (displayOrders.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1 / -1; padding: 2rem;">No hay pedidos registrados.</p>';
-        return;
-    }
-
-    displayOrders.forEach(order => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.style.padding = '1.25rem';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAFETERÍA UdeC - Panel Administrativo</title>
+    <link rel="stylesheet" href="style.css?v=2026">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos específicos y mejorados para el Admin */
+        .admin-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: white;
+            padding: 1.25rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
         
-        let itemsHtml = order.items.map(i => `<div style="display:flex; justify-content:space-between; font-size:0.9rem;"><span>${i.qty} × ${i.name}</span> <span style="color:var(--text-muted);">$${(i.price * i.qty).toFixed(2)}</span></div>`).join('');
-        
-        let timeString = "Reciente";
-        if(order.timestamp) {
-            timeString = order.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        .status-badge-0 { background: #fef3c7; color: #d97706; }
+        .status-badge-1 { background: #e0f2fe; color: #0284c7; }
+        .status-badge-2 { background: #dcfce7; color: #16a34a; }
+        .status-badge-3 { background: #f1f5f9; color: #64748b; }
+
+        .order-status-pill {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
         }
 
-        card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
-                <span style="color: var(--primary);">ORDEN ${order.orderNumber}</span>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">${timeString}</span>
-            </div>
-            <p style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Matrícula:</strong> ${order.maskedId}</p>
-            <div style="display: flex; flex-direction: column; gap: 4px; background: var(--bg-color); padding: 8px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0.75rem;">
-                ${itemsHtml}
-            </div>
-            <p style="font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem;">Total: <span style="color: var(--primary);">$${order.total.toFixed(2)}</span></p>
-            
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem;">
-                <button class="cat-btn ${order.status===0?'active':''}" style="font-size:0.75rem; padding:0.4rem;" data-id="${order.id}" data-status="0">Recibido</button>
-                <button class="cat-btn ${order.status===1?'active':''}" style="font-size:0.75rem; padding:0.4rem;" data-id="${order.id}" data-status="1">Preparando</button>
-                <button class="cat-btn ${order.status===2?'active':''}" style="font-size:0.75rem; padding:0.4rem;" data-id="${order.id}" data-status="2">Listo</button>
-                <button class="cat-btn ${order.status===3?'active':''}" style="font-size:0.75rem; padding:0.4rem;" data-id="${order.id}" data-status="3">Entregado</button>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-
-    document.querySelectorAll('#adminOrdersContainer button').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const orderId = e.target.dataset.id;
-            const newStatus = parseInt(e.target.dataset.status);
-            await updateDoc(doc(db, "pedidos", orderId), { status: newStatus });
-        });
-    });
-}
-
-const btnFilterAll = document.getElementById('btnFilterAll');
-const btnFilterPending = document.getElementById('btnFilterPending');
-
-if (btnFilterAll && btnFilterPending) {
-    btnFilterAll.addEventListener('click', (e) => {
-        currentFilter = 'todos';
-        e.target.classList.add('active');
-        btnFilterPending.classList.remove('active');
-        renderOrders();
-    });
-
-    btnFilterPending.addEventListener('click', (e) => {
-        currentFilter = 'pendientes';
-        e.target.classList.add('active');
-        btnFilterAll.classList.remove('active');
-        renderOrders();
-    });
-}
-
-const btnSimulateScan = document.getElementById('btnSimulateScan');
-if (btnSimulateScan) {
-    btnSimulateScan.addEventListener('click', () => {
-        const resultDiv = document.getElementById('scanResult');
-        const orderToDeliver = allOrders.find(o => o.status === 2);
-        
-        if (orderToDeliver) {
-            resultDiv.innerHTML = `
-                <h3 style="color: var(--primary);">ORDEN ${orderToDeliver.orderNumber}</h3>
-                <p><strong>Alumno:</strong> ${orderToDeliver.maskedId}</p>
-                <p style="margin: 0.5rem 0;"><strong>Estado:</strong> 🟢 LISTO PARA ENTREGAR</p>
-                <button class="btn-primary" id="btnConfirmDelivery" style="margin-top:10px;">Confirmar entrega</button>
-            `;
-            resultDiv.classList.remove('hidden');
-
-            document.getElementById('btnConfirmDelivery').addEventListener('click', async () => {
-                await updateDoc(doc(db, "pedidos", orderToDeliver.id), { status: 3 });
-                resultDiv.classList.add('hidden');
-                alert('¡Orden marcada como entregada!');
-            });
-        } else {
-            resultDiv.innerHTML = `<p style="color: var(--text-muted);">No hay órdenes "Listas" para entregar.</p>`;
-            resultDiv.classList.remove('hidden');
+        .admin-card-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
         }
-    });
-}
 
-function switchView(viewId) {
-    views.forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-    navButtons.forEach(b => {
-        if(b.dataset.target === viewId) b.classList.add('active');
-        else b.classList.remove('active');
-    });
-}
-navButtons.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.target)));
+        .admin-card-actions button {
+            font-size: 0.8rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+
+        .admin-card-actions button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 6px rgba(0, 102, 51, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1>🛠️ PANEL ADMINISTRATIVO UdeC</h1>
+            <h2>Control de Órdenes en Tiempo Real</h2>
+            <span class="academic-badge">Sistema Institucional Danni's</span>
+        </div>
+    </header>
+
+    <main id="app-container">
+        <!-- VISTA 1: GESTIÓN DE PEDIDOS -->
+        <div id="view-admin-orders" class="view active">
+            <div class="admin-header-flex">
+                <div>
+                    <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Flujo de Pedidos Activos</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Actualización automática vía Firebase Firestore</p>
+                </div>
+                <!-- Filtros Pro -->
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="btnFilterAll" class="cat-btn active" style="padding: 0.4rem 1rem; border-radius: 8px;">Todos</button>
+                    <button id="btnFilterPending" class="cat-btn" style="padding: 0.4rem 1rem; border-radius: 8px;">Pendientes</button>
+                </div>
+            </div>
+
+            <!-- Contenedor en Cuadrícula para las Órdenes -->
+            <div id="adminOrdersContainer" class="products-grid"></div>
+        </div>
+
+        <!-- VISTA 2: SIMULADOR DE ESCÁNER / ENTREGA -->
+        <div id="view-scanner" class="view">
+            <div class="success-screen" style="max-width: 600px; margin: 0 auto; text-align: center;">
+                <i class="fas fa-qrcode success-icon" style="font-size: 3.5rem;"></i>
+                <h2>Simulador de Escáner QR / Entrega</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Simula la lectura de la orden del alumno para proceder a su entrega final.</p>
+                
+                <button id="btnSimulateScan" class="btn-primary" style="max-width: 280px; margin: 0 auto 1.5rem auto;">Escanear Siguiente Orden Lista</button>
+                
+                <div id="scanResult" class="hidden" style="background: var(--bg-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); text-align: left; animation: fadeIn 0.3s ease;"></div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="view-admin-orders">
+            <i class="fas fa-clipboard-list"></i><span>Pedidos</span>
+        </button>
+        <button class="nav-btn" data-target="view-scanner">
+            <i class="fas fa-qrcode"></i><span>Escáner</span>
+        </button>
+    </nav>
+
+    <script type="module" src="admin.js?v=2026"></script>
+</body>
+</html>
