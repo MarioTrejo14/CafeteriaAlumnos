@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bachillerato 25 UdC - Panel de Cafetería</title>
+    <title>SICEUC - Panel de Cafetería</title>
     <!-- Favicon institucional UdeC -->
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/4/44/Universidad_de_Colima.png">
-    <link rel="stylesheet" href="style.css?v=2026.4">
+    <link rel="stylesheet" href="style.css?v=2026.5">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .admin-header-flex {
@@ -63,9 +63,9 @@
 <body>
     <header class="app-header">
         <div class="header-content">
-            <img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Logo_de_la_Universidad_de_Colima.svg/1280px-Logo_de_la_Universidad_de_Colima.svg.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail" class="header-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Universidad_de_Colima.png" alt="Universidad de Colima" class="header-logo">
             <div class="header-text">
-                <h1>Bachillerato 25 - PANEL DE CONTROL</h1>
+                <h1>SICEUC - PANEL DE CONTROL</h1>
                 <h2>Administración de Cafetería Danni's</h2>
                 <span class="academic-badge">Control Institucional</span>
             </div>
@@ -101,6 +101,17 @@
                 <div id="scanResult" class="hidden" style="background: var(--bg-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); text-align: left;"></div>
             </div>
         </div>
+
+        <!-- VISTA 3: INVENTARIO / CONTROL DE STOCK -->
+        <div id="view-inventory" class="view">
+            <div class="admin-header-flex">
+                <div>
+                    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Control de Disponibilidad de Menú</h2>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Activa o agota platillos al instante para los alumnos</p>
+                </div>
+            </div>
+            <div id="adminInventoryContainer" class="products-grid"></div>
+        </div>
     </main>
 
     <nav class="bottom-nav">
@@ -110,8 +121,11 @@
         <button class="nav-btn" data-target="view-scanner">
             <i class="fas fa-qrcode"></i><span>Escáner QR</span>
         </button>
+        <button class="nav-btn" data-target="view-inventory">
+            <i class="fas fa-boxes"></i><span>Inventario</span>
+        </button>
     </nav>
 
-    <script type="module" src="admin.js?v=2026.4"></script>
+    <script type="module" src="admin.js?v=2026.5"></script>
 </body>
 </html>
