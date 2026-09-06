@@ -1,23 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCLhub133VwdXlQEq4PZ4A6vOYrttSOtR0",
-    authDomain: "cafeteria-udc.firebaseapp.com",
-    projectId: "cafeteria-udc",
-    storageBucket: "cafeteria-udc.firebasestorage.app",
-    messagingSenderId: "721300284933",
-    appId: "1:721300284933:web:2ab2826531918e0edcde6c"
-};
-
-let db = null;
-try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-} catch (e) {
-    console.warn("Firebase warning:", e);
-}
-
 const database = {
     categories: ["Todos", "Desayunos y Comidas", "Tacos", "Tortas y Más", "Menú Verde", "Bebidas", "Paquetes"],
     products: [
@@ -54,52 +34,72 @@ const database = {
     ]
 };
 
-let cart = [];
+// Estado con persistencia en LocalStorage
+let cart = JSON.parse(localStorage.getItem('udc_cart')) || [];
 let currentCategory = "Todos";
-let activeOrderDocId = localStorage.getItem('myActiveOrderId') || null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    init();
-});
-
-function init() {
+    initToastContainer();
     renderCategories();
     renderProducts();
     setupNavigation();
-    
-    if (activeOrderDocId && db) {
-        switchView('view-tracking');
-        listenToMyOrder(activeOrderDocId);
+    updateCartUI();
+});
+
+function initToastContainer() {
+    if (!document.getElementById('toast-container')) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
     }
 }
 
+function showToast(message) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981;"></i> ${message}`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideInToast 0.3s ease reverse forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
 function renderCategories() {
-    const categoriesContainer = document.getElementById('categoriesContainer');
-    if (!categoriesContainer) return;
-    categoriesContainer.innerHTML = '';
+    const container = document.getElementById('categoriesContainer');
+    if (!container) return;
+    container.innerHTML = '';
     database.categories.forEach(cat => {
         const btn = document.createElement('button');
         btn.className = `cat-btn ${cat === currentCategory ? 'active' : ''}`;
         btn.textContent = cat;
         btn.onclick = () => { currentCategory = cat; renderCategories(); renderProducts(); };
-        categoriesContainer.appendChild(btn);
+        container.appendChild(btn);
     });
 }
 
 function renderProducts(filterText = '') {
-    const productsContainer = document.getElementById('productsContainer');
-    if (!productsContainer) return;
-    productsContainer.innerHTML = '';
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    
     let filtered = database.products.filter(p => p.available);
     if (currentCategory !== "Todos") filtered = filtered.filter(p => p.category === currentCategory);
     if (filterText) filtered = filtered.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">No se encontraron platillos disponibles.</p>';
+        return;
+    }
 
     filtered.forEach(p => {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             ${p.tag ? `<span class="product-tag">${p.tag}</span>` : ''}
-            <img src="${p.image}" class="product-img" onerror="this.src='https://via.placeholder.com/150'">
+            <img src="${p.image}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/150'">
             <div class="product-info">
                 <h3 class="product-name">${p.name}</h3>
                 <p class="product-desc">${p.desc}</p>
@@ -107,7 +107,7 @@ function renderProducts(filterText = '') {
                 <button class="btn-add" data-id="${p.id}">Agregar al carrito</button>
             </div>
         `;
-        productsContainer.appendChild(card);
+        container.appendChild(card);
     });
 
     document.querySelectorAll('.btn-add').forEach(btn => {
@@ -120,7 +120,7 @@ window.changeQty = function(id, delta) {
     if (item) {
         item.qty += delta;
         if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
-        updateCartUI();
+        saveAndSyncCart();
     }
 }
 
@@ -129,6 +129,13 @@ function addToCart(productId) {
     const existing = cart.find(item => item.id === productId);
     if (existing) existing.qty++;
     else cart.push({ ...product, qty: 1 });
+    
+    saveAndSyncCart();
+    showToast(`¡${product.name} agregado al pedido!`);
+}
+
+function saveAndSyncCart() {
+    localStorage.setItem('udc_cart', JSON.stringify(cart));
     updateCartUI();
 }
 
@@ -149,17 +156,17 @@ function updateCartUI() {
     let total = 0;
     
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">Tu carrito está vacío.</p>';
+        cartItemsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2.5rem;">Tu carrito está vacío. ¡Explora el menú!</p>';
     } else {
         cart.forEach(item => {
             total += item.price * item.qty;
             cartItemsContainer.innerHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 1rem; border-radius: 10px; border: 1px solid var(--border);">
-                    <div><strong>${item.name}</strong><br><small style="color: var(--text-muted);">$${item.price.toFixed(2)} c/u</small></div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <button onclick="changeQty(${item.id}, -1)" style="width: 32px; height: 32px; padding: 0; background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border);">-</button>
-                        <span style="font-weight: 600;">${item.qty}</span>
-                        <button onclick="changeQty(${item.id}, 1)" style="width: 32px; height: 32px; padding: 0; background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border);">+</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+                    <div><strong style="font-size: 0.95rem;">${item.name}</strong><br><small style="color: var(--text-muted);">$${item.price.toFixed(2)} c/u</small></div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button onclick="changeQty(${item.id}, -1)" style="width: 32px; height: 32px; padding: 0; background: #f8fafc; color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-weight: bold;">-</button>
+                        <span style="font-weight: 700; font-size: 0.95rem; min-width: 15px; text-align: center;">${item.qty}</span>
+                        <button onclick="changeQty(${item.id}, 1)" style="width: 32px; height: 32px; padding: 0; background: #f8fafc; color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-weight: bold;">+</button>
                     </div>
                 </div>`;
         });
@@ -178,76 +185,29 @@ const studentIdInput = document.getElementById('studentId');
 if (studentIdInput) studentIdInput.addEventListener('input', updateCartUI);
 
 const btnEmptyCart = document.getElementById('btnEmptyCart');
-if (btnEmptyCart) btnEmptyCart.addEventListener('click', () => { cart = []; updateCartUI(); });
+if (btnEmptyCart) btnEmptyCart.addEventListener('click', () => { 
+    cart = []; 
+    saveAndSyncCart();
+    showToast("Se vació el carrito.");
+});
 
 const btnConfirmOrder = document.getElementById('btnConfirmOrder');
 if (btnConfirmOrder) {
-    btnConfirmOrder.addEventListener('click', async () => {
-        if (!db) {
-            alert("Modo simulación: Firebase no está conectado.");
-            return;
-        }
-
-        btnConfirmOrder.disabled = true;
-        btnConfirmOrder.textContent = "Procesando...";
-
-        const studentId = studentIdInput.value.trim();
-        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    btnConfirmOrder.addEventListener('click', () => {
         const orderNumber = `A-${Math.floor(1000 + Math.random() * 9000)}`;
-        const maskedId = studentId.length > 4 ? '••••' + studentId.slice(-4) : studentId;
+        document.getElementById('trackOrderNumber').textContent = `ORDEN #${orderNumber}`;
+        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        document.getElementById('trackOrderTotal').textContent = `$${total.toFixed(2)}`;
+        
+        const ul = document.getElementById('trackOrderItems');
+        ul.innerHTML = cart.map(i => `<li style="display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px dashed var(--border);"><span>${i.qty} × ${i.name}</span> <strong>$${(i.price * i.qty).toFixed(2)}</strong></li>`).join('');
 
-        try {
-            const docRef = await addDoc(collection(db, "pedidos"), {
-                orderNumber,
-                studentId,
-                maskedId,
-                items: cart,
-                total,
-                status: 0,
-                timestamp: serverTimestamp()
-            });
-
-            localStorage.setItem('myActiveOrderId', docRef.id);
-            cart = [];
-            studentIdInput.value = '';
-            updateCartUI();
-            btnConfirmOrder.textContent = "Confirmar Pedido";
-            
-            switchView('view-tracking');
-            listenToMyOrder(docRef.id);
-        } catch (e) {
-            console.error("Error al guardar pedido:", e);
-            alert("Hubo un error al conectar con la cafetería.");
-            btnConfirmOrder.disabled = false;
-            btnConfirmOrder.textContent = "Confirmar Pedido";
-        }
-    });
-}
-
-function listenToMyOrder(docId) {
-    if (!db) return;
-    onSnapshot(doc(db, "pedidos", docId), (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const trackNum = document.getElementById('trackOrderNumber');
-            const trackTot = document.getElementById('trackOrderTotal');
-            const ul = document.getElementById('trackOrderItems');
-            
-            if (trackNum) trackNum.textContent = `ORDEN #${data.orderNumber}`;
-            if (trackTot) trackTot.textContent = `$${data.total.toFixed(2)}`;
-            if (ul) ul.innerHTML = data.items.map(i => `<li style="display:flex; justify-content:space-between;"><span>${i.qty} × ${i.name}</span> <span>$${(i.price * i.qty).toFixed(2)}</span></li>`).join('');
-
-            for(let i = 0; i <= 3; i++){
-                const step = document.getElementById(`step-${i}`);
-                if (step) {
-                    step.style.color = "var(--text-muted)";
-                    if (i <= data.status) {
-                        step.style.color = "var(--primary)";
-                        step.style.fontWeight = "700";
-                    }
-                }
-            }
-        }
+        cart = [];
+        localStorage.removeItem('udc_cart');
+        studentIdInput.value = '';
+        updateCartUI();
+        switchView('view-tracking');
+        showToast("¡Pedido confirmado con éxito!");
     });
 }
 
@@ -263,6 +223,7 @@ function switchView(viewId) {
         if(b.dataset.target === viewId) b.classList.add('active');
         else b.classList.remove('active');
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function setupNavigation() {
