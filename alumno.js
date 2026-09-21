@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Credenciales Firebase proporcionadas
 const firebaseConfig = {
     apiKey: "AIzaSyCLhub133VwdXlQEq4PZ4A6vOYrttSOtR0",
     authDomain: "cafeteria-udc.firebaseapp.com",
@@ -66,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCartUI();
 
     if (db) {
-        // Escuchar inventario en tiempo real desde Firebase
         onSnapshot(collection(db, "menu"), (snapshot) => {
             let remoteProducts = [];
             snapshot.forEach(docSnap => {
@@ -100,7 +100,6 @@ function showToast(message) {
     toast.className = 'toast';
     toast.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981;"></i> ${message}`;
     container.appendChild(toast);
-    
     setTimeout(() => {
         toast.style.animation = 'slideInToast 0.3s ease reverse forwards';
         setTimeout(() => toast.remove(), 300);
@@ -125,7 +124,6 @@ function renderProducts(filterText = '') {
     if (!container) return;
     container.innerHTML = '';
     
-    // Solo mostrar productos que estén disponibles en el inventario
     let filtered = database.products.filter(p => p.available);
     if (currentCategory !== "Todos") filtered = filtered.filter(p => p.category === currentCategory);
     if (filterText) filtered = filtered.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
@@ -192,8 +190,6 @@ function saveAndSyncCart() {
 function updateCartUI() {
     const cartItemsContainer = document.getElementById('cartItems');
     const cartTotalEl = document.getElementById('cartTotal');
-    const summarySubtotal = document.getElementById('summarySubtotal');
-    const summaryItemCount = document.getElementById('summaryItemCount');
     const cartBadge = document.getElementById('cartBadge');
     const studentIdInput = document.getElementById('studentId');
     const btnConfirmOrder = document.getElementById('btnConfirmOrder');
@@ -203,17 +199,16 @@ function updateCartUI() {
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     cartBadge.textContent = totalItems;
     cartBadge.classList.toggle('hidden', totalItems === 0);
-    if (summaryItemCount) summaryItemCount.textContent = totalItems;
 
     cartItemsContainer.innerHTML = '';
     let total = 0;
     
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = `
-            <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 4rem 2rem; text-align: center;">
-                <i class="fas fa-shopping-cart" style="font-size: 3rem; color: var(--border); margin-bottom: 1rem;"></i>
-                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Tu carrito está vacío</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem;">¿No sabes qué ordenar? Explora nuestro menú institucional.</p>
+            <div style="background: white; border: 1px solid var(--border); border-radius: var(--border-radius); padding: 3rem 1rem; text-align: center;">
+                <i class="fas fa-shopping-cart" style="font-size: 3rem; color: #ddd; margin-bottom: 1rem;"></i>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.3rem;">Tu carrito está vacío</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Explora el menú y agrega tus alimentos favoritos.</p>
             </div>`;
     } else {
         cart.forEach(item => {
@@ -223,25 +218,21 @@ function updateCartUI() {
                     <img src="${item.image}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/150'">
                     <div class="cart-item-details">
                         <div class="cart-item-title">${item.name}</div>
-                        <div class="cart-item-price">$${item.price.toFixed(2)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">c/u</span></div>
+                        <div class="cart-item-price">$${item.price.toFixed(2)}</div>
                         <div class="cart-item-actions">
                             <div class="qty-selector">
                                 <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
                                 <span class="qty-value">${item.qty}</span>
                                 <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
                             </div>
-                            <button class="btn-delete-item" onclick="removeItem('${item.id}')">
-                                <i class="far fa-trash-alt"></i> Eliminar
-                            </button>
+                            <button class="btn-delete-item" onclick="removeItem('${item.id}')">Eliminar</button>
                         </div>
                     </div>
                 </div>`;
         });
     }
 
-    if (summarySubtotal) summarySubtotal.textContent = `$${total.toFixed(2)}`;
     cartTotalEl.textContent = `$${total.toFixed(2)}`;
-    
     if (btnConfirmOrder) {
         btnConfirmOrder.disabled = !(cart.length > 0 && studentIdInput && studentIdInput.value.trim().length >= 4);
     }
@@ -285,7 +276,7 @@ if (btnConfirmOrder) {
             localStorage.removeItem('udc_cart');
             studentIdInput.value = '';
             updateCartUI();
-            btnConfirmOrder.textContent = "Continuar con el pedido";
+            btnConfirmOrder.textContent = "Confirmar Pedido";
             
             switchView('view-tracking');
             if (db) listenToMyOrder(docRefId);
@@ -294,7 +285,7 @@ if (btnConfirmOrder) {
             console.error("Error:", e);
             alert("Hubo un error al enviar el pedido.");
             btnConfirmOrder.disabled = false;
-            btnConfirmOrder.textContent = "Continuar con el pedido";
+            btnConfirmOrder.textContent = "Confirmar Pedido";
         }
     });
 }
@@ -308,16 +299,26 @@ function listenToMyOrder(docId) {
             document.getElementById('trackOrderTotal').textContent = `$${data.total.toFixed(2)}`;
             
             const ul = document.getElementById('trackOrderItems');
-            ul.innerHTML = data.items.map(i => `<li style="display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px dashed var(--border);"><span>${i.qty} × ${i.name}</span> <strong>$${(i.price * i.qty).toFixed(2)}</strong></li>`).join('');
+            ul.innerHTML = data.items.map(i => `<li style="display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px dashed #eee;"><span>${i.qty} × ${i.name}</span> <strong>$${(i.price * i.qty).toFixed(2)}</strong></li>`).join('');
 
-            for(let i = 0; i <= 3; i++){
-                const step = document.getElementById(`step-${i}`);
-                if (step) {
-                    step.style.color = "var(--text-muted)";
-                    if (i <= data.status) {
-                        step.style.color = "var(--primary)";
-                        step.style.fontWeight = "700";
-                    }
+            const statusTexts = [
+                "🟡 Tu pedido ha sido recibido por la cafetería",
+                "🔥 Tu orden se está preparando en cocina",
+                "🟢 ¡Tu pedido está listo para pasar a recoger!",
+                "✅ Pedido entregado con éxito"
+            ];
+            document.getElementById('trackStatusTitle').textContent = statusTexts[data.status] || "Procesando...";
+
+            const percentages = [0, 33, 66, 100];
+            const fillBar = document.getElementById('mlProgressFill');
+            if (fillBar) fillBar.style.width = `${percentages[data.status]}%`;
+
+            for (let i = 0; i <= 3; i++) {
+                const stepEl = document.getElementById(`ml-step-${i}`);
+                if (stepEl) {
+                    stepEl.classList.remove('active', 'completed');
+                    if (i < data.status) stepEl.classList.add('completed');
+                    else if (i === data.status) stepEl.classList.add('active');
                 }
             }
         }
