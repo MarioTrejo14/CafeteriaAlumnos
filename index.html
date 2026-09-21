@@ -3,110 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAFETERÍA UdeC -Bachillerato 25 - Menú</title>
+    <title>CAFETERÍA UdeC - Menú Digital</title>
     <!-- Favicon institucional UdeC -->
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/4/44/Universidad_de_Colima.png">
-    <link rel="stylesheet" href="style.css?v=2026.4">
+    <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <header class="app-header">
         <div class="header-content">
-            <img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Logo_de_la_Universidad_de_Colima.svg/1280px-Logo_de_la_Universidad_de_Colima.svg.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail" class="header-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Universidad_de_Colima.png" alt="Universidad de Colima" class="header-logo">
             <div class="header-text">
                 <h1>CAFETERÍA UdeC</h1>
-                <h2>Bachillerato 25</h2>
-                <h3>Menú digital</h3>
-                <span class="academic-badge">Prototipo académico</span>
+                <h2>Menú digital</h2>
+                <span class="academic-badge">Prototipo académico — Universidad de Colima</span>
             </div>
         </div>
     </header>
 
     <main id="app-container">
-        <!-- VISTA: MENÚ -->
+        <!-- VISTA: MENÚ PRINCIPAL -->
         <section id="view-menu" class="view active">
             <div class="search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Buscar platillos o bebidas...">
+                <input type="text" id="searchInput" placeholder="Buscar productos...">
             </div>
-            <div class="categories-scroll" id="categoriesContainer"></div>
-            <div class="products-grid" id="productsContainer"></div>
+            
+            <div class="categories-scroll" id="categoriesContainer">
+                <!-- Se llena con JS -->
+            </div>
+
+            <div class="products-grid" id="productsContainer">
+                <!-- Se llena con JS -->
+            </div>
         </section>
 
         <!-- VISTA: CARRITO -->
         <section id="view-cart" class="view">
-            <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem; font-weight: 800;">Carrito de Compras</h2>
-            <div class="cart-layout">
-                <div id="cartItems" class="cart-items-container"></div>
-                <div>
-                    <div class="cart-summary-card">
-                        <div class="summary-title">Resumen del pedido</div>
-                        <div class="summary-row">
-                            <span>Productos (<span id="summaryItemCount">0</span>)</span>
-                            <span id="summarySubtotal">$0.00</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>Entrega en cafetería</span>
-                            <strong style="color: #10b981;">Gratis</strong>
-                        </div>
-                        <div class="summary-row total">
-                            <span>Total a pagar</span>
-                            <span id="cartTotal">$0.00</span>
-                        </div>
-
-                        <div style="margin-top: 1.5rem;">
-                            <label for="studentId" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem;">Número de cuenta del alumno:</label>
-                            <input type="number" id="studentId" placeholder="Ej. 20252811" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 10px; outline: none; margin-bottom: 1rem; font-size: 0.95rem;">
-                            
-                            <button id="btnConfirmOrder" class="btn-primary" disabled style="padding: 0.9rem; font-size: 1rem; margin-bottom: 0.75rem;">Continuar con el pedido</button>
-                            <button id="btnEmptyCart" class="btn-danger" style="background: transparent; color: #ef4444; border: 1px solid #fee2e2;">Vaciar carrito</button>
-                        </div>
-                    </div>
+            <h2>Tu Pedido</h2>
+            <div id="cartItems" class="cart-items">
+                <!-- Items del carrito -->
+            </div>
+            <div class="cart-summary">
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0.00</span>
+                </div>
+                
+                <div class="checkout-form">
+                    <label for="studentId">Número de cuenta del alumno:</label>
+                    <input type="number" id="studentId" placeholder="Ej. 20123456" required>
+                    <small>*Solo para identificación del pedido. Prototipo académico.</small>
+                    
+                    <button id="btnConfirmOrder" class="btn-primary" disabled>
+                        Confirmar Pedido
+                    </button>
+                    <button id="btnEmptyCart" class="btn-danger">Vaciar Carrito</button>
                 </div>
             </div>
         </section>
 
-        <!-- VISTA: RASTREO -->
+        <!-- VISTA: RASTREO DE PEDIDO (ESTILO MERCADO LIBRE) -->
         <section id="view-tracking" class="view">
             <div class="success-screen">
                 <i class="fas fa-check-circle success-icon"></i>
                 <h2>PEDIDO REALIZADO</h2>
-                <h1 id="trackOrderNumber" style="color: var(--primary); margin: 0.5rem 0;">Cargando...</h1>
+                <h1 id="trackOrderNumber">ORDEN #---</h1>
                 
-                <div class="progress-container" style="margin: 2rem 0;">
-                    <div class="progress-bar" style="display: flex; justify-content: space-between;">
-                        <div class="progress-step" id="step-0">1. Recibido</div>
-                        <div class="progress-step" id="step-1">2. Preparando</div>
-                        <div class="progress-step" id="step-2">3. Listo</div>
-                        <div class="progress-step" id="step-3">4. Entregado</div>
+                <div class="ml-progress-wrapper">
+                    <div id="trackStatusTitle" style="font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem; font-size: 1.1rem;">Estado: Recibido</div>
+                    
+                    <div class="ml-progress-bar-container">
+                        <div class="ml-progress-fill" id="mlProgressFill"></div>
+                    </div>
+
+                    <div class="ml-steps-labels">
+                        <div class="ml-step-item" id="ml-step-0">
+                            <div class="ml-step-dot"><i class="fas fa-receipt"></i></div>
+                            <div class="ml-step-text">Recibido</div>
+                        </div>
+                        <div class="ml-step-item" id="ml-step-1">
+                            <div class="ml-step-dot"><i class="fas fa-fire"></i></div>
+                            <div class="ml-step-text">Preparando</div>
+                        </div>
+                        <div class="ml-step-item" id="ml-step-2">
+                            <div class="ml-step-dot"><i class="fas fa-check"></i></div>
+                            <div class="ml-step-text">Listo</div>
+                        </div>
+                        <div class="ml-step-item" id="ml-step-3">
+                            <div class="ml-step-dot"><i class="fas fa-box-open"></i></div>
+                            <div class="ml-step-text">Entregado</div>
+                        </div>
                     </div>
                 </div>
 
-                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px; text-align: left; border: 1px solid var(--border);">
-                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Resumen:</h3>
-                    <ul id="trackOrderItems" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
-                    <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem; display: flex; justify-content: space-between; font-weight: 700;">
-                        <span>Total Pagado:</span>
-                        <span id="trackOrderTotal">$0.00</span>
-                    </div>
+                <div class="order-details-card">
+                    <h3>Resumen:</h3>
+                    <ul id="trackOrderItems"></ul>
+                    <h3 class="track-total">Total: <span id="trackOrderTotal"></span></h3>
                 </div>
             </div>
         </section>
     </main>
 
+    <!-- NAVEGACIÓN INFERIOR ALUMNO -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-menu">
-            <i class="fas fa-utensils"></i><span>Menú</span>
+            <i class="fas fa-utensils"></i>
+            <span>Menú</span>
         </button>
         <button class="nav-btn" data-target="view-cart">
-            <i class="fas fa-shopping-cart"></i><span>Carrito</span>
+            <i class="fas fa-shopping-cart"></i>
+            <span>Carrito</span>
             <span id="cartBadge" class="badge hidden">0</span>
         </button>
-        <button class="nav-btn" data-target="view-tracking" id="navTracking">
-            <i class="fas fa-receipt"></i><span>Mi Orden</span>
+        <button class="nav-btn" data-target="view-tracking">
+            <i class="fas fa-receipt"></i>
+            <span>Mi Orden</span>
         </button>
     </nav>
 
-    <script type="module" src="alumno.js?v=2026.4"></script>
+    <!-- Script de Alumno -->
+    <script type="module" src="alumno.js"></script>
 </body>
 </html>
