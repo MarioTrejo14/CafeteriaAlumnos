@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SICEUC - Panel de Cafetería</title>
+    <title>CAFETERÍA UdeC - Panel de Cafetería</title>
     <!-- Favicon institucional UdeC -->
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/4/44/Universidad_de_Colima.png">
-    <link rel="stylesheet" href="style.css?v=2026.5">
+    <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .admin-header-flex {
@@ -18,9 +18,9 @@
             gap: 1rem;
             background: white;
             padding: 1.25rem;
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-sm);
+            border-radius: var(--border-radius);
+            border: 1px solid #eaeaea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
         .status-badge-0 { background: #fef3c7; color: #d97706; }
         .status-badge-1 { background: #e0f2fe; color: #0284c7; }
@@ -44,88 +44,91 @@
 
         .admin-card-actions button {
             font-size: 0.75rem;
-            padding: 0.4rem;
+            padding: 0.5rem;
             border-radius: 8px;
             background: #f8fafc;
             color: var(--text-muted);
-            border: 1px solid var(--border);
-            box-shadow: none;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            font-weight: 600;
         }
 
         .admin-card-actions button.active {
-            background: var(--primary);
+            background: var(--primary-color);
             color: white;
-            border-color: var(--primary);
-            box-shadow: 0 2px 6px rgba(0, 102, 51, 0.2);
+            border-color: var(--primary-color);
         }
     </style>
 </head>
 <body>
-    <header class="app-header">
+    <header class="app-header" style="background-color: #333;">
         <div class="header-content">
-            <img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Logo_de_la_Universidad_de_Colima.svg/1280px-Logo_de_la_Universidad_de_Colima.svg.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail" class="header-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Universidad_de_Colima.png" alt="Universidad de Colima" class="header-logo">
             <div class="header-text">
-                <h1>SICEUC - PANEL DE CONTROL</h1>
-                <h2>Administración de Cafetería Danni's</h2>
-                <span class="academic-badge">Control Institucional</span>
+                <h1>PANEL DE CAFETERÍA</h1>
+                <h2>Gestión de Pedidos y Stock</h2>
+                <span class="academic-badge">Personal Autorizado</span>
             </div>
         </div>
     </header>
 
     <main id="app-container">
-        <!-- VISTA 1: GESTIÓN DE PEDIDOS -->
-        <div id="view-admin-orders" class="view active">
+        <!-- VISTA: PANEL DE PEDIDOS -->
+        <section id="view-admin" class="view active">
             <div class="admin-header-flex">
                 <div>
-                    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Órdenes en Tiempo Real</h2>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Sincronización automática con Firebase</p>
+                    <h2 style="font-size: 1.1rem; font-weight: 700;">Órdenes en Tiempo Real</h2>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Sincronizado con Firebase</p>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button id="btnFilterAll" class="cat-btn active" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem;">Todos</button>
-                    <button id="btnFilterPending" class="cat-btn" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem;">Pendientes</button>
+                    <button id="btnFilterAll" class="cat-btn active" style="padding: 0.4rem 1rem;">Todos</button>
+                    <button id="btnFilterPending" class="cat-btn" style="padding: 0.4rem 1rem;">Pendientes</button>
                 </div>
             </div>
-
-            <div id="adminOrdersContainer" class="products-grid"></div>
-        </div>
-
-        <!-- VISTA 2: SIMULADOR DE ESCÁNER QR -->
-        <div id="view-scanner" class="view">
-            <div class="success-screen" style="max-width: 600px; margin: 0 auto; text-align: center;">
-                <i class="fas fa-qrcode success-icon" style="font-size: 3rem;"></i>
-                <h2>Módulo de Entrega por QR</h2>
-                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Simula la lectura del código del alumno para liberar los pedidos listos.</p>
-                
-                <button id="btnSimulateScan" class="btn-primary" style="max-width: 280px; margin: 0 auto 1.5rem auto;">Escanear Siguiente Orden</button>
-                
-                <div id="scanResult" class="hidden" style="background: var(--bg-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); text-align: left;"></div>
+            <div id="adminOrdersContainer" class="admin-orders-grid">
+                <p style="text-align:center; padding: 2rem; color: var(--text-muted);">Cargando pedidos...</p>
             </div>
-        </div>
+        </section>
 
-        <!-- VISTA 3: INVENTARIO / CONTROL DE STOCK -->
-        <div id="view-inventory" class="view">
+        <!-- VISTA: ESCÁNER QR -->
+        <section id="view-scanner" class="view">
+            <div class="scanner-container" style="max-width: 600px; margin: 0 auto; text-align: center; background: white; padding: 2rem; border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <h2>Escáner de Credencial</h2>
+                <div class="scanner-box" style="height: 180px; margin: 1rem 0;">
+                    <i class="fas fa-qrcode"></i>
+                    <p>Apunta al código QR de la credencial UdeC</p>
+                </div>
+                <button id="btnSimulateScan" class="btn-primary">Simular Escaneo (Buscar siguiente orden lista)</button>
+                <div id="scanResult" class="scan-result hidden" style="text-align: left; margin-top: 1.5rem;"></div>
+            </div>
+        </section>
+
+        <!-- VISTA: INVENTARIO / CONTROL DE STOCK -->
+        <section id="view-inventory" class="view">
             <div class="admin-header-flex">
                 <div>
-                    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Control de Disponibilidad de Menú</h2>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Activa o agota platillos al instante para los alumnos</p>
+                    <h2 style="font-size: 1.1rem; font-weight: 700;">Control de Disponibilidad</h2>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Activa o agota platillos al instante</p>
                 </div>
             </div>
             <div id="adminInventoryContainer" class="products-grid"></div>
-        </div>
+        </section>
     </main>
 
+    <!-- NAVEGACIÓN INFERIOR ADMIN -->
     <nav class="bottom-nav">
-        <button class="nav-btn active" data-target="view-admin-orders">
+        <button class="nav-btn active" data-target="view-admin">
             <i class="fas fa-clipboard-list"></i><span>Pedidos</span>
         </button>
         <button class="nav-btn" data-target="view-scanner">
-            <i class="fas fa-qrcode"></i><span>Escáner QR</span>
+            <i class="fas fa-qrcode"></i><span>Escáner</span>
         </button>
         <button class="nav-btn" data-target="view-inventory">
             <i class="fas fa-boxes"></i><span>Inventario</span>
         </button>
     </nav>
 
-    <script type="module" src="admin.js?v=2026.5"></script>
+    <!-- Script de Admin -->
+    <script type="module" src="admin.js"></script>
 </body>
 </html>
