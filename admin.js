@@ -29,7 +29,6 @@ const navButtons = document.querySelectorAll('.nav-btn');
 
 const statusLabels = ["Recibido", "Preparando", "Listo", "Entregado"];
 
-// Menú base por si es necesario respaldar
 const defaultProducts = [
     { id: 1, name: "Desayuno Casero", price: 55, category: "Desayunos y Comidas", image: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&q=80", desc: "3 complementos + agua fresca chica.", available: true, tag: "Popular" },
     { id: 2, name: "Comida Corrida", price: 75, category: "Desayunos y Comidas", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80", desc: "1 guisado + 2 acompañamientos + tortillas + agua.", available: true, tag: "" },
@@ -65,7 +64,6 @@ const defaultProducts = [
 
 document.addEventListener("DOMContentLoaded", () => {
     if (db) {
-        // Escuchar Pedidos
         const q = query(collection(db, "pedidos"), orderBy("timestamp", "desc"));
         onSnapshot(q, (snapshot) => {
             allOrders = [];
@@ -75,14 +73,12 @@ document.addEventListener("DOMContentLoaded", () => {
             renderOrders();
         });
 
-        // Escuchar Inventario / Menú
         onSnapshot(collection(db, "menu"), (snapshot) => {
             menuProducts = [];
             snapshot.forEach((docSnap) => {
                 menuProducts.push({ id: docSnap.id, ...docSnap.data() });
             });
             
-            // Si Firestore está vacío, inicializamos con los productos por defecto
             if (menuProducts.length === 0) {
                 defaultProducts.forEach(async (p) => {
                     await setDoc(doc(db, "menu", String(p.id)), p);
@@ -91,8 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderInventory();
             }
         });
-    } else {
-        if (container) container.innerHTML = `<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">Firebase no está conectado.</p>`;
     }
 });
 
@@ -107,10 +101,9 @@ function renderOrders() {
 
     if (displayOrders.length === 0) {
         container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; background: white; border-radius: var(--radius); border: 1px solid var(--border);">
-                <i class="fas fa-box-open" style="font-size: 3rem; color: var(--border); margin-bottom: 1rem;"></i>
-                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">No hay pedidos registrados</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem;">Las órdenes de los alumnos aparecerán aquí en tiempo real.</p>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; background: white; border-radius: var(--border-radius);">
+                <i class="fas fa-box-open" style="font-size: 2.5rem; color: #ddd; margin-bottom: 0.5rem;"></i>
+                <h3 style="font-size: 1.1rem; font-weight: 700;">No hay pedidos</h3>
             </div>`;
         return;
     }
@@ -135,21 +128,21 @@ function renderOrders() {
         const currentStatusText = statusLabels[order.status] || "Desconocido";
 
         card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
                 <div>
-                    <span style="font-weight: 800; font-size: 1.05rem; color: var(--primary);">ORDEN ${order.orderNumber}</span>
+                    <span style="font-weight: 800; font-size: 1.05rem; color: var(--primary-color);">ORDEN ${order.orderNumber}</span>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">Cuenta: <strong>${order.maskedId}</strong></div>
                 </div>
                 <span class="order-status-pill status-badge-${order.status}">${currentStatusText}</span>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 2px; background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0.75rem;">
+            <div style="display: flex; flex-direction: column; gap: 2px; background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 0.75rem;">
                 ${itemsHtml}
             </div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="far fa-clock"></i> ${timeString}</span>
-                <span style="font-weight: 800; font-size: 1.1rem; color: var(--primary);">$${order.total.toFixed(2)}</span>
+                <span style="font-weight: 800; font-size: 1.1rem; color: var(--primary-color);">$${order.total.toFixed(2)}</span>
             </div>
             
             <div class="admin-card-actions">
@@ -185,14 +178,14 @@ function renderInventory() {
         card.style.padding = '1.25rem';
         card.innerHTML = `
             <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
-                <img src="${p.image}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/150'">
+                <img src="${p.image}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/150'">
                 <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem;">${p.name}</h4>
-                    <span style="font-size: 0.85rem; color: var(--primary); font-weight: 800;">$${p.price.toFixed(2)}</span>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.1rem;">${p.name}</h4>
+                    <span style="font-size: 0.8rem; color: var(--primary-color); font-weight: 800;">$${p.price.toFixed(2)}</span>
                 </div>
             </div>
-            <button class="btn-toggle-stock" data-id="${p.id}" style="background: ${p.available ? '#10b981' : '#ef4444'}; color: white; padding: 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; width: 100%;">
-                ${p.available ? '<i class="fas fa-check-circle"></i> Disponible (Agotar)' : '<i class="fas fa-times-circle"></i> Agotado (Activar)'}
+            <button class="btn-toggle-stock" data-id="${p.id}" style="background: ${p.available ? '#10b981' : '#ef4444'}; color: white; padding: 0.5rem; border-radius: 8px; font-weight: 600; font-size: 0.8rem; width: 100%; border:none; cursor:pointer;">
+                ${p.available ? '🟢 Disponible (Agotar)' : '🔴 Agotado (Activar)'}
             </button>
         `;
         inventoryContainer.appendChild(card);
@@ -242,12 +235,12 @@ if (btnSimulateScan) {
         if (orderToDeliver) {
             resultDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h3 style="color: var(--primary); font-size: 1rem;">ORDEN ${orderToDeliver.orderNumber}</h3>
-                    <span class="order-status-pill status-badge-2">Listo para entregar</span>
+                    <h3 style="color: var(--primary-color); font-size: 1rem;">ORDEN ${orderToDeliver.orderNumber}</h3>
+                    <span class="order-status-pill status-badge-2">Listo</span>
                 </div>
-                <p style="font-size: 0.9rem; margin-bottom: 0.3rem;"><strong>Matrícula:</strong> ${orderToDeliver.maskedId}</p>
-                <p style="font-size: 0.9rem; margin-bottom: 1rem;"><strong>Total:</strong> $${orderToDeliver.total.toFixed(2)}</p>
-                <button class="btn-primary" id="btnConfirmDelivery" style="padding: 0.7rem; font-size: 0.9rem;">Confirmar Entrega Final</button>
+                <p style="font-size: 0.85rem; margin-bottom: 0.2rem;"><strong>Matrícula:</strong> ${orderToDeliver.maskedId}</p>
+                <p style="font-size: 0.85rem; margin-bottom: 1rem;"><strong>Total:</strong> $${orderToDeliver.total.toFixed(2)}</p>
+                <button class="btn-primary" id="btnConfirmDelivery" style="padding: 0.6rem; font-size: 0.85rem;">Confirmar Entrega Final</button>
             `;
             resultDiv.classList.remove('hidden');
 
@@ -257,10 +250,7 @@ if (btnSimulateScan) {
                 alert('¡Orden entregada con éxito!');
             });
         } else {
-            resultDiv.innerHTML = `
-                <p style="color: var(--text-muted); text-align: center; margin: 0; font-size: 0.9rem;">
-                    <i class="fas fa-info-circle"></i> No hay órdenes en estado <strong>"Listo"</strong> para entregar.
-                </p>`;
+            resultDiv.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; text-align:center; margin:0;">No hay órdenes listas para entregar.</p>`;
             resultDiv.classList.remove('hidden');
         }
     });
